@@ -153,10 +153,6 @@ module Modlookup::Listener
       @moderator
     end
 
-    def broadcaster
-      @broadcaster
-    end
-
     def subscriber
       @subscriber
     end
@@ -173,7 +169,6 @@ module Modlookup::Listener
 
       staff = 0
       moderator = 0
-      broadcaster = 0
       subscriber = 0
       partner = 0
       premium = 0
@@ -184,8 +179,6 @@ module Modlookup::Listener
           case key
           when "staff"
             staff = value
-          when "broadcaster"
-            broadcaster = value
           when "moderator"
             moderator = value
           when "subscriber"
@@ -196,6 +189,7 @@ module Modlookup::Listener
             premium = value
           when "vip"
             vip = value
+          when "broadcaster"
           when "twitchcon2018"
           when "bits"
           when "sub-gifter"
@@ -209,10 +203,10 @@ module Modlookup::Listener
         end
       end
       
-      new(staff.not_nil!, moderator.not_nil!, broadcaster.not_nil!, subscriber.not_nil!)
+      new(staff.not_nil!, moderator.not_nil!, subscriber.not_nil!, vip.not_nil!)
     end
 
-    def initialize (@staff : Int32 | String, @moderator : Char | Int32 | String, @broadcaster : Char | Int32 | String, @subscriber : Char | Int32 | String)
+    def initialize (@staff : Int32 | String, @moderator : Char | Int32 | String, @subscriber : Char | Int32 | String, @vip : Char | Int32 | String)
     end
   end
 
@@ -240,7 +234,7 @@ module Modlookup::Listener
             case twitch.command
             when ""
               if !twitch.tags.badges.nil?
-                mod_message = Modlookup::ModMessage.new(twitch.tags.display_name, twitch.room.delete('#'), twitch.tags.badges.not_nil!.moderator.to_i)
+                mod_message = Modlookup::ModMessage.new(twitch.nick.downcase(), twitch.room.delete('#'), twitch.tags.badges.not_nil!.moderator.to_i)
                 if mod_message.mod == 1
                   test = collection.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel, "mod": mod_message.mod }.to_json))
                   if test.nil?
