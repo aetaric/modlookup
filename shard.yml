@@ -16,6 +16,8 @@ dependencies:
     branch: master
   bson:
     github: jeromegn/bson.cr
+  kemal-rest-api:
+    github: blocknotes/kemal-rest-api
 
 crystal: 0.29.0
 
