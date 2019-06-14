@@ -11,9 +11,6 @@ targets:
     main: src/modlookup-runner.cr
 
 dependencies:
-  redis:
-    github: stefanwille/crystal-redis
-    version: ~> 2.0.0
   mongo:
     github: kimvex/mongodb-crystal
     branch: master
