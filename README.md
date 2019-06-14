@@ -1,4 +1,4 @@
-# modlookup-listener
+# modlookup
 
 A custom Twitch mod status tracking system using Twitch's TMI Firehose (verified bots only) and backed by mongodb.
 
