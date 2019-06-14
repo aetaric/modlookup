@@ -1,22 +1,20 @@
 # modlookup-listener
 
-TODO: Write a description here
+A custom Twitch mod status tracking system using Twitch's TMI Firehose (verified bots only) and backed by mongodb.
 
 ## Installation
 
-TODO: Write installation instructions here
+* Install Crystal version 0.29.0 or greater via <https://crystal-lang.org/reference/installation/>.
+* Install Shards via `shards install`.
+* Run `make all && sudo make install`
 
 ## Usage
 
-TODO: Write usage instructions here
-
-## Development
-
-TODO: Write development instructions here
+Run `modlookup-listener`
 
 ## Contributing
 
-1. Fork it (<https://github.com/your-github-user/modlookup-listener/fork>)
+1. Fork it (<https://github.com/aetaric/modlookup/fork>)
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
@@ -24,4 +22,4 @@ TODO: Write development instructions here
 
 ## Contributors
 
-- [your-name-here](https://github.com/your-github-user) - creator and maintainer
+- [aetaric](https://github.com/aetaric) - creator and maintainer
