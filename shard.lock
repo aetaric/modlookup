@@ -1,0 +1,18 @@
+version: 1.0
+shards:
+  bson:
+    github: jeromegn/bson.cr
+    version: 0.1.5
+
+  mongo:
+    github: kimvex/mongodb-crystal
+    commit: 2fdd27e4e06d1306bfaef365f67c536b2b9a567b
+
+  pool:
+    github: ysbaddaden/pool
+    version: 0.2.3
+
+  redis:
+    github: stefanwille/crystal-redis
+    version: 2.0.0
+

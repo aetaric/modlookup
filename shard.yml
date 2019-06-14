@@ -1,0 +1,25 @@
+name: modlookup
+version: 0.1.0
+
+authors:
+  - Dustin Essington <aetaric@gmail.com>
+
+targets:
+  modlookup-listener:
+    main: src/modlookup-listener.cr
+  modlookup-runner:
+    main: src/modlookup-runner.cr
+
+dependencies:
+  redis:
+    github: stefanwille/crystal-redis
+    version: ~> 2.0.0
+  mongo:
+    github: kimvex/mongodb-crystal
+    branch: master
+  bson:
+    github: jeromegn/bson.cr
+
+crystal: 0.29.0
+
+license: MIT
