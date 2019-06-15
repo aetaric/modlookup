@@ -9,12 +9,12 @@ require "./modlookup.cr"
 module Modlookup::Listener
   VERSION = "0.1.0"
 
-  users   = false
+  track_user_info   = false
   verbose = false
 
   OptionParser.parse! do |parser|
     parser.banner = "Usage: modlookup-listener [arguments]"
-    parser.on("-u", "--users", "Track user data too (staff, partner, etc)") { users = true }
+    parser.on("-u", "--users", "Track user data too (staff, partner, etc)") { track_user_info = true }
     parser.on("-v", "--verbose", "Enable verbose logging") { verbose = true }
     parser.on("-h", "--help", "Show this help") { puts parser }
   end
@@ -107,7 +107,7 @@ module Modlookup::Listener
             end
           end
         end
-        if users
+        if track_user_info
           test = user.find_one(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json))
           badges = twitch.tags.badges.not_nil!
           if test.nil?
