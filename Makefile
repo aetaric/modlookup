@@ -1,4 +1,4 @@
-all: listener api
+all: prereqs shards config install
 clean: 
 	rm modlookup-listener modlookup-api
 listener: 
@@ -12,6 +12,10 @@ config:
 	cp config-example.yml /etc/modlookup.yml
 	chmod 0700 /etc/modlookup.yml
 	chown root: /etc/modlookup.yml
-install: listener api systemd config
+prereqs:
+	apt install -y libyaml-dev libbson-dev libmongoc-dev
+shards:
+	shards install
+install: listener api systemd 
 	cp modlookup-listener /usr/local/bin/modlookup-listener
 	cp modlookup-api /usr/local/bin/modlookup-api
