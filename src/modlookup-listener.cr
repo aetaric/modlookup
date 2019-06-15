@@ -8,7 +8,7 @@ require "./modlookup.cr"
 module Modlookup::Listener
   VERSION = "0.1.0"
 
-  config = Modlookup::Config.from_yaml(File.read("./config.yml"))
+  config = Modlookup::Config.from_yaml(File.read("/etc/modlookup.yml"))
 
   if config.mongouser.nil?
     mongodb = Mongo::Client.new "mongodb://#{config.mongohost}:#{config.mongoport}/#{config.mongodb}"

@@ -1,0 +1,11 @@
+[Unit]
+Description=API service for modlookup
+
+[Service]
+ExecStart=/usr/local/bin/modlookup-api
+KillMode=process
+Restart=on-failure
+RestartPreventExitStatus=255
+
+[Install]
+WantedBy=multi-user.target

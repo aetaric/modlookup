@@ -1,0 +1,11 @@
+[Unit]
+Description=Firehose listening service for modlookup
+
+[Service]
+ExecStart=/usr/local/bin/modlookup-listener
+KillMode=process
+Restart=on-failure
+RestartPreventExitStatus=255
+
+[Install]
+WantedBy=multi-user.target
