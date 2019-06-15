@@ -9,11 +9,13 @@ require "./modlookup.cr"
 module Modlookup::Listener
   VERSION = "0.1.0"
 
-  users = false
+  users   = false
+  verbose = false
 
   OptionParser.parse! do |parser|
     parser.banner = "Usage: modlookup-listener [arguments]"
     parser.on("-u", "--users", "Track user data too (staff, partner, etc)") { users = true }
+    parser.on("-v", "--verbose", "Enable verbose logging") { verbose = true }
     parser.on("-h", "--help", "Show this help") { puts parser }
   end
 
@@ -29,17 +31,30 @@ module Modlookup::Listener
   modstate = db["modstate"]
   user = db["user"]
 
-  indexes = modstate.find_indexes()
-  has_index = false
-  indexes.each do |index|
+  modstate_indexes = modstate.find_indexes()
+  modstate_has_index = false
+  modstate_indexes.each do |index|
     if index["name"] == "nick_1_channel_1"
-      has_index = true
+      modstate_has_index = true
     end
   end
 
-  if has_index == false
+  user_indexes = user.find_indexes()
+  user_has_index = false
+  user_indexes.each do |index|
+    if index["name"] == "nick_1"
+      user_has_index = true
+    end
+  end 
+
+  if modstate_has_index == false
     puts "We are missing an index. Creating an index for nick and channel to speedup processing."
     modstate.create_index(BSON.from_json({ "nick": 1, "channel": 1 }.to_json),Mongo::IndexOpt.new(true,false,"nick_1_channel_1",false,false,0,nil,nil,nil))
+  end
+
+  if user_has_index == false
+    puts "We are missing an index. Creating an index for nick and channel to speedup processing."
+    user.create_index(BSON.from_json({ "nick": 1 }.to_json),Mongo::IndexOpt.new(true,false,"nick_1",false,false,0,nil,nil,nil))
   end
 
   channel = Channel(Modlookup::TwitchMessage | Nil).new
@@ -79,13 +94,17 @@ module Modlookup::Listener
           test = modstate.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
           if test.nil?
             modstate.insert(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
-            puts "inserted #{mod_message.nick} - #{mod_message.channel}"
+            if verbose
+              puts "Inserted #{mod_message.nick} - #{mod_message.channel}"
+            end
           end
         else
           test = modstate.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
           if !test.nil?
             modstate.remove(test)
-            puts "removed #{mod_message.nick} - #{mod_message.channel}"
+            if verbose
+              puts "Removed #{mod_message.nick} - #{mod_message.channel}"
+            end
           end
         end
         if users
@@ -93,10 +112,15 @@ module Modlookup::Listener
           badges = twitch.tags.badges.not_nil!
           if test.nil?
             user.insert(BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
+            if verbose
+              puts "Created user #{twitch.nick.downcase()}"
+            end
           else
-            puts "Updated user #{twitch.nick.downcase()}"
             user.update(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json), 
               BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
+            if verbose
+              puts "Updated user #{twitch.nick.downcase()}"
+            end
           end
         end
       end
