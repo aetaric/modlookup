@@ -19,9 +19,23 @@ module Modlookup::Listener
   db = mongodb[config.mongodb]
   collection = db["modstate"]
 
+  indexes = collection.find_indexes()
+  has_index = false
+  indexes.each do |index|
+    if index["name"] == "nick_1_channel_1"
+      has_index = true
+    end
+  end
+
+  if has_index == false
+    puts "We are missing an index. Creating an index for nick and channel to speedup processing."
+    collection.create_index(BSON.from_json({ "nick": 1, "channel": 1 }.to_json),Mongo::IndexOpt.new(true,false,"nick_1_channel_1",false,false,0,nil,nil,nil))
+  end
+
   channel = Channel(Modlookup::TwitchMessage | Nil).new
 
   spawn do
+    puts "Starting firehose listener"
     HTTP::Client.get("http://tmi.twitch.tv/firehose?oauth_token=#{config.oauth}") do |response|
       if response.success?
         while true
@@ -39,6 +53,9 @@ module Modlookup::Listener
             exit(1)
           end
         end
+      else
+        puts "#{response.status_code}"
+        puts "#{response.body}"
       end
     end
   end
@@ -49,13 +66,13 @@ module Modlookup::Listener
       if !twitch.tags.badges.nil?
         mod_message = Modlookup::ModMessage.new(twitch.nick.downcase(), twitch.room.delete('#'), twitch.tags.badges.not_nil!.moderator.to_i)
         if mod_message.mod == 1
-          test = collection.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel, "mod": mod_message.mod }.to_json))
+          test = collection.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
           if test.nil?
-            collection.insert(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel, "mod": mod_message.mod }.to_json))
+            collection.insert(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
             puts "inserted #{mod_message.nick} - #{mod_message.channel}"
           end
         else
-          test = collection.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel, "mod": mod_message.mod }.to_json))
+          test = collection.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
           if !test.nil?
             collection.remove(test)
             puts "removed #{mod_message.nick} - #{mod_message.channel}"
@@ -64,4 +81,6 @@ module Modlookup::Listener
       end
     end
   end
+  puts "Somehow we got here... exiting."
+  exit(0)
 end
