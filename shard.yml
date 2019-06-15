@@ -18,6 +18,8 @@ dependencies:
     github: jeromegn/bson.cr
   kemal-rest-api:
     github: blocknotes/kemal-rest-api
+  kemal:
+    github: kemalcr/kemal
 
 crystal: 0.29.0
 
