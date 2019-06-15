@@ -17,9 +17,10 @@ module Modlookup::Listener
   end
 
   db = mongodb[config.mongodb]
-  collection = db["modstate"]
+  modstate = db["modstate"]
+  user = db["user"]
 
-  indexes = collection.find_indexes()
+  indexes = modstate.find_indexes()
   has_index = false
   indexes.each do |index|
     if index["name"] == "nick_1_channel_1"
@@ -29,7 +30,7 @@ module Modlookup::Listener
 
   if has_index == false
     puts "We are missing an index. Creating an index for nick and channel to speedup processing."
-    collection.create_index(BSON.from_json({ "nick": 1, "channel": 1 }.to_json),Mongo::IndexOpt.new(true,false,"nick_1_channel_1",false,false,0,nil,nil,nil))
+    modstate.create_index(BSON.from_json({ "nick": 1, "channel": 1 }.to_json),Mongo::IndexOpt.new(true,false,"nick_1_channel_1",false,false,0,nil,nil,nil))
   end
 
   channel = Channel(Modlookup::TwitchMessage | Nil).new
@@ -66,17 +67,27 @@ module Modlookup::Listener
       if !twitch.tags.badges.nil?
         mod_message = Modlookup::ModMessage.new(twitch.nick.downcase(), twitch.room.delete('#'), twitch.tags.badges.not_nil!.moderator.to_i)
         if mod_message.mod == 1
-          test = collection.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
+          test = modstate.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
           if test.nil?
-            collection.insert(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
+            modstate.insert(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
             puts "inserted #{mod_message.nick} - #{mod_message.channel}"
           end
         else
-          test = collection.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
+          test = modstate.find_one(BSON.from_json({ "nick": mod_message.nick, "channel": mod_message.channel }.to_json))
           if !test.nil?
-            collection.remove(test)
+            modstate.remove(test)
             puts "removed #{mod_message.nick} - #{mod_message.channel}"
           end
+        end
+
+        test = user.find_one(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json))
+        badges = twitch.tags.badges.not_nil!
+        if test.nil?
+          user.insert(BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
+        else
+          puts "Updated user #{twitch.nick.downcase()}"
+          user.update(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json), 
+            BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
         end
       end
     end

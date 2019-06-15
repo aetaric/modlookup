@@ -29,5 +29,10 @@ module Modlookup::API
     a.to_s + "\n"
   end
 
+  get "/api/user/:nick" do |env|
+    nick = env.params.url["nick"]
+    db["user"].find_one(BSON.from_json({ "nick": nick }.to_json)).to_json + "\n"
+  end
+
   Kemal.run
 end

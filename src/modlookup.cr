@@ -158,23 +158,23 @@ module Modlookup
     struct Badges
 
       def staff
-        @staff
+        @staff.to_i
       end
   
       def moderator
-        @moderator
+        @moderator.to_i
       end
   
       def subscriber
-        @subscriber
+        @subscriber.to_i
       end
       
       def partner
-        @partner
+        @partner.to_i
       end
   
       def vip
-        @vip
+        @vip.to_i
       end
   
       def self.new(string : String | Nil)
@@ -215,10 +215,11 @@ module Modlookup
           end
         end
         
-        new(staff.not_nil!, moderator.not_nil!, subscriber.not_nil!, vip.not_nil!)
+        new(staff.not_nil!, moderator.not_nil!, subscriber.not_nil!, vip.not_nil!, partner.not_nil!)
       end
   
-      def initialize (@staff : Int32 | String, @moderator : Char | Int32 | String, @subscriber : Char | Int32 | String, @vip : Char | Int32 | String)
+      def initialize (@staff : Int32 | String, @moderator : Char | Int32 | String, @subscriber : Char | Int32 | String, 
+        @vip : Char | Int32 | String, @partner : Char | Int32 | String)
       end
     end
 end
