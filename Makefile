@@ -8,6 +8,7 @@ api:
 systemd:
 	cp init/modlookup-listener.service /etc/systemd/system/
 	cp init/modlookup-api.service /etc/systemd/system/
+	systemctl daemon-reload
 config:
 	cp config-example.yml /etc/modlookup.yml
 	chmod 0700 /etc/modlookup.yml
