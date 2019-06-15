@@ -1,12 +1,21 @@
 require "http/client"
 require "json"
 require "mongo"
+require "option_parser"
 require "./modlookup.cr"
 
 # TODO: Write documentation for `Modlookup::Listener`
 
 module Modlookup::Listener
   VERSION = "0.1.0"
+
+  users = false
+
+  OptionParser.parse! do |parser|
+    parser.banner = "Usage: modlookup-listener [arguments]"
+    parser.on("-u", "--users", "Track user data too (staff, partner, etc)") { users = true }
+    parser.on("-h", "--help", "Show this help") { puts parser }
+  end
 
   config = Modlookup::Config.from_yaml(File.read("/etc/modlookup.yml"))
 
@@ -79,15 +88,16 @@ module Modlookup::Listener
             puts "removed #{mod_message.nick} - #{mod_message.channel}"
           end
         end
-
-        test = user.find_one(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json))
-        badges = twitch.tags.badges.not_nil!
-        if test.nil?
-          user.insert(BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
-        else
-          puts "Updated user #{twitch.nick.downcase()}"
-          user.update(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json), 
-            BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
+        if users
+          test = user.find_one(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json))
+          badges = twitch.tags.badges.not_nil!
+          if test.nil?
+            user.insert(BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
+          else
+            puts "Updated user #{twitch.nick.downcase()}"
+            user.update(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json), 
+              BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
+          end
         end
       end
     end
