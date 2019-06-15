@@ -3,6 +3,7 @@ Description=API service for modlookup
 
 [Service]
 ExecStart=/usr/local/bin/modlookup-api
+Environment=HOME=/
 KillMode=process
 Restart=on-failure
 RestartPreventExitStatus=255
