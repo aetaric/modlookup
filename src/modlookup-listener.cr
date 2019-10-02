@@ -28,8 +28,9 @@ module Modlookup::Listener
   end
 
   db = mongodb[config.mongodb]
-  modstate = db["modstate"]
-  user = db["user"]
+  modstate = db["modstate"].as(Mongo::Collection)
+  usercoll = db["user"].as(Mongo::Collection)
+  bans = db["bans"].as(Mongo::Collection)
 
   modstate_indexes = modstate.find_indexes()
   modstate_has_index = false
@@ -39,13 +40,24 @@ module Modlookup::Listener
     end
   end
 
-  user_indexes = user.find_indexes()
+  user_indexes = usercoll.find_indexes()
   user_has_index = false
   user_indexes.each do |index|
     if index["name"] == "nick_1"
       user_has_index = true
     end
-  end 
+  end
+
+  ban_indexes = bans.find_indexes()
+  ban_has_expire_index = false
+  ban_has_lookup_index = false
+  ban_indexes.each do |index|
+    if index["name"] == "channel_1"
+      ban_has_lookup_index = true
+    elsif index["name"] == "expiration"
+      ban_has_expire_index = true
+    end
+  end
 
   if modstate_has_index == false
     puts "We are missing an index. Creating an index for nick and channel to speedup processing."
@@ -53,11 +65,21 @@ module Modlookup::Listener
   end
 
   if user_has_index == false
-    puts "We are missing an index. Creating an index for nick and channel to speedup processing."
-    user.create_index(BSON.from_json({ "nick": 1 }.to_json),Mongo::IndexOpt.new(true,false,"nick_1",false,false,0,nil,nil,nil))
+    puts "We are missing an index. Creating an index for users to speedup processing."
+    usercoll.create_index(BSON.from_json({ "nick": 1 }.to_json),Mongo::IndexOpt.new(true,false,"nick_1",false,false,0,nil,nil,nil))
   end
 
-  channel = Channel(Modlookup::TwitchMessage | Nil).new
+  if ban_has_expire_index == false
+    puts "We are missing an index. Creating an index for bans to expire timeouts."
+    bans.create_index(BSON.from_json({ "expires": 1 }.to_json),Mongo::IndexOpt.new(true,false,"expiration",false,false,1,nil,nil,nil))
+  end
+
+  if ban_has_lookup_index == false
+    puts "We are missing an index. Creating an index for bans to speedup processing."
+    bans.create_index(BSON.from_json({ "channel": 1, "user": 1 }.to_json),Mongo::IndexOpt.new(true,false,"channel_1",false,false,0,nil,nil,nil))
+  end
+
+  chan = Channel(Modlookup::TwitchMessage | Nil).new
 
   spawn do
     puts "Starting firehose listener"
@@ -71,7 +93,7 @@ module Modlookup::Listener
                 json_array = data.split("data: ")
                 json_array.delete_at(0)
                 twitch = Modlookup::TwitchMessage.from_json(json_array.join(""))
-                channel.send(twitch)
+                chan.send(twitch)
               end
             end
           else
@@ -85,7 +107,7 @@ module Modlookup::Listener
     end
   end
 
-  while twitch = channel.receive
+  while twitch = chan.receive
     case twitch.command
     when ""
       if !twitch.tags.badges.nil?
@@ -108,20 +130,44 @@ module Modlookup::Listener
           end
         end
         if track_user_info
-          test = user.find_one(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json))
+          test = usercoll.find_one(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json))
           badges = twitch.tags.badges.not_nil!
           if test.nil?
-            user.insert(BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
+            usercoll.insert(BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
             if verbose
               puts "Created user #{twitch.nick.downcase()}"
             end
           else
-            user.update(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json), 
+            usercoll.update(BSON.from_json({ "nick": twitch.nick.downcase() }.to_json), 
               BSON.from_json({ "nick": twitch.nick.downcase(), "staff": badges.staff, "partner": badges.partner }.to_json))
             if verbose
               puts "Updated user #{twitch.nick.downcase()}"
             end
           end
+        end
+      end
+      is_banned = bans.find_one(BSON.from_json({ "user": twitch.nick.downcase(), "channel": twitch.room.delete('#') }.to_json))
+      if !is_banned.nil?
+        bans.remove(is_banned)
+        puts "Removed ban on user #{twitch.nick.downcase()} from channel #{twitch.room.delete("#")}"
+      end
+    when "CLEARCHAT"
+      # data: {"command":"CLEARCHAT","room":"","nick":"","target":"#hachubby","body":"mraleksiev","tags":"ban-duration=5;room-id=195166073;target-user-id=464776424;tmi-sent-ts=1569961251823"}
+      user = twitch.body
+      channel = twitch.target.delete("#")
+      timeout_duration = 0
+      if user != ""
+        if twitch.tags.ban_duration.nil?
+          bans.insert(BSON.from_json({ "user": user, "channel": channel, "expires": Time.utc(9999, 1, 1, 0, 0, 0) }.to_json))
+          puts "Added ban for user #{user} in channel #{channel}"
+        else
+          timeout_duration = twitch.tags.ban_duration.not_nil!
+          tmi_time = Time.utc
+          span = Time::Span.new(0,0,0,timeout_duration)
+          puts tmi_time.to_s
+          puts span.to_s
+          bans.insert(BSON.from_json({ "user": user, "channel": channel, "expires": tmi_time + span }.to_json))
+          puts "Added timeout for user #{user} in channel #{channel}"
         end
       end
     end

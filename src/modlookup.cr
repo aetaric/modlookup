@@ -121,12 +121,16 @@ module Modlookup
       getter display_name : String
       getter msg_id : String
       getter badges : Badges | Nil
+      getter ban_duration : Int32 | Nil
+      getter tmi_sent_time : Int32
     
       def self.new(parser : JSON::PullParser)
         string = parser.read_string
         id = ""
         display_name = ""
         msg_id = ""
+        tmi_sent_time = 0
+        ban_duration = nil
         badges = nil
     
         TagParser.new(string).parse do |key, value|
@@ -137,6 +141,10 @@ module Modlookup
             display_name = value
           when "msg-id"
             msg_id = value
+          when "tmi-sent-time"
+            tmi_sent_time = value.not_nil!.to_i
+          when "ban-duration"
+            ban_duration = value.not_nil!.to_i
           when "badges"
             if !value.nil?
               badges = Badges.new(value)
@@ -148,11 +156,12 @@ module Modlookup
           end
         end
     
-        new(id.not_nil!, display_name.not_nil!, msg_id.not_nil!, badges)
+        new(id.not_nil!, display_name.not_nil!, msg_id.not_nil!, tmi_sent_time.not_nil!, ban_duration, badges)
       end
     
       def initialize(@id : String, @display_name : String,
-                     @msg_id : String, @badges : Badges | Nil)
+                     @msg_id : String, @tmi_sent_time : Int32 | String,
+                     @ban_duration : Int32 | Nil, @badges : Badges | Nil)
       end
     end
     struct Badges
