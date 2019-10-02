@@ -158,15 +158,24 @@ module Modlookup::Listener
       timeout_duration = 0
       if user != ""
         if twitch.tags.ban_duration.nil?
-          bans.insert(BSON.from_json({ "user": user, "channel": channel, "expires": Time.utc(9999, 1, 1, 0, 0, 0) }.to_json))
+          bson = BSON.new()
+          bson["user"] = user
+          bson["channel"] = channel
+          bson["expires"] = Time.utc(9999, 1, 1, 0, 0, 0)
+          bans.insert(bson)
+
           puts "Added ban for user #{user} in channel #{channel}"
         else
           timeout_duration = twitch.tags.ban_duration.not_nil!
           tmi_time = Time.utc
           span = Time::Span.new(0,0,0,timeout_duration)
-          puts tmi_time.to_s
-          puts span.to_s
-          bans.insert(BSON.from_json({ "user": user, "channel": channel, "expires": tmi_time + span }.to_json))
+
+          bson = BSON.new()
+          bson["user"] = user
+          bson["channel"] = channel
+          bson["expires"] = tmi_time + span
+          bans.insert(bson)
+          #bans.insert(BSON.from_json({ "user": user, "channel": channel, "expires": tmi_time + span }.to_json))
           puts "Added timeout for user #{user} in channel #{channel}"
         end
       end
