@@ -2,9 +2,9 @@ all: prereqs shards config install
 clean: 
 	rm modlookup-listener modlookup-api
 listener: 
-	crystal build src/modlookup-listener.cr
+	crystal build -Dpreview_mt src/modlookup-listener.cr
 api:
-	crystal build src/modlookup-api.cr
+	crystal build -Dpreview_mt src/modlookup-api.cr
 systemd:
 	cp init/modlookup-listener.service /etc/systemd/system/
 	cp init/modlookup-api.service /etc/systemd/system/
