@@ -51,11 +51,17 @@ module Modlookup::Listener
   ban_indexes = bans.find_indexes()
   ban_has_expire_index = false
   ban_has_lookup_index = false
+  ban_has_channel_index = false
+  ban_has_user_index = false
   ban_indexes.each do |index|
-    if index["name"] == "channel_1"
+    if index["name"] == "channel_1_user_1"
       ban_has_lookup_index = true
     elsif index["name"] == "expiration"
       ban_has_expire_index = true
+    elsif index["name"] == "channel_1"
+      ban_has_channel_index = true
+    elsif index["name"] == "user_1"
+      ban_has_user_index = true
     end
   end
 
@@ -76,7 +82,17 @@ module Modlookup::Listener
 
   if ban_has_lookup_index == false
     puts "We are missing an index. Creating an index for bans to speedup processing."
-    bans.create_index(BSON.from_json({ "channel": 1, "user": 1 }.to_json),Mongo::IndexOpt.new(true,false,"channel_1",false,false,0,nil,nil,nil))
+    bans.create_index(BSON.from_json({ "channel": 1, "user": 1 }.to_json),Mongo::IndexOpt.new(true,false,"channel_1_user_1",false,false,0,nil,nil,nil))
+  end
+
+  if ban_has_channel_index == false
+    puts "We are missing an index. Creating an index for bans to speedup processing."
+    bans.create_index(BSON.from_json({ "channel": 1 }.to_json),Mongo::IndexOpt.new(true,false,"channel_1",false,false,0,nil,nil,nil))
+  end
+
+  if ban_has_user_index == false
+    puts "We are missing an index. Creating an index for bans to speedup processing."
+    bans.create_index(BSON.from_json({ "user": 1 }.to_json),Mongo::IndexOpt.new(true,false,"user_1",false,false,0,nil,nil,nil))
   end
 
   chan = Channel(Modlookup::TwitchMessage | Nil).new
