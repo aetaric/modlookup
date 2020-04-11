@@ -222,7 +222,7 @@ module Modlookup
             when "hype-train"
             when "none"
             else
-              puts "Got unknown badge #{key} with value #{value}"
+              #puts "Got unknown badge #{key} with value #{value}"
             end
           end
         end
