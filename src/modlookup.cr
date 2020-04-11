@@ -217,6 +217,7 @@ module Modlookup
             when "bits-charity"
             when "bits-leader"
             when "turbo"
+            when "founder"
             when "none"
             else
               #puts "Got unknown badge #{key} with value #{value}"
