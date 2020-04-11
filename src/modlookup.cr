@@ -218,6 +218,8 @@ module Modlookup
             when "bits-leader"
             when "turbo"
             when "founder"
+            when "glhf-pledge"
+            when "hype-train"
             when "none"
             else
               puts "Got unknown badge #{key} with value #{value}"
